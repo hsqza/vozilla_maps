@@ -34,9 +34,6 @@
             font-weight: bold;
         }
 
-    }
+    }  
 
-    
-
-    
 </style>
