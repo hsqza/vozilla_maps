@@ -1,6 +1,9 @@
 import axios from 'axios'
 
-// Get object cars from api_server
+/*  Request - pojazdy :
+    W argumencie przekazywany jest status pojazdow (dostepne/niedostepne);
+    Domyślnie zwracane sa wszystkie pojazdy */
+
 export function carsData(status) {
 
     switch (arguments.length) {
@@ -18,27 +21,26 @@ export function carsData(status) {
             break;
     }
 
-    
 }
 
-// Get object parking from api_server
+// Request - parking
 export function parkingData() {
-    return axios.get('map?objectType=PARKING&vehicleStatus=AVAILABLE&vehicleStatus=RESERVED')
+    return axios.get('map?objectType=PARKING')
         .then(response => response.data)
         .catch(error => console.error(error));
 }
 
 
-// Get object zones from api_server
+// Request - strefa
 export function zonesData() {
     return axios.get('map?objectType=ZONE')
         .then(response => response.data)
         .catch(error => console.error(error))
 }
 
-// Get object parking from api_server
+// Request - POI
 export function poiData() {
-    return axios.get('map?objectType=POI&vehicleStatus=AVAILABLE&vehicleStatus=RESERVED')
+    return axios.get('map?objectType=POI')
         .then(response => response.data)
         .catch(error => console.error(error));
 }

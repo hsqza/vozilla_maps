@@ -5,6 +5,7 @@ import { routes } from './routes.js'
 
 import * as VueGoogleMaps from 'vue2-google-maps'
 import GmapCluster from 'vue2-google-maps/dist/components/cluster'
+
 import axios from 'axios'
 
 Vue.use(VueRouter);
@@ -14,6 +15,7 @@ Vue.use(VueGoogleMaps, {
     libraries: "places" // necessary for places input
   }
 });
+
 Vue.component('GmapCluster', GmapCluster)
 
 const router = new VueRouter({

@@ -1,32 +1,36 @@
 <template>
     <div>
-        <gmap-polygon v-if="carsZone" :path="initZones" :options="{ strokeColor: 'green', strokeWeight: 1, fillColor: 'lightgreen' }"></gmap-polygon>
+        <gmap-polygon v-if="zoneOnMap" :path="initZones" :options="{ strokeColor: 'green', strokeWeight: 2, fillColor: 'lightgreen' }"></gmap-polygon>
     </div>
 </template>
 
 <script>
     import axios from 'axios'
-    import * as fetch from '../../axios_request'
+    import * as fetch from '../../map_request'
 
     export default {
-        
-        props: ['carsZone'],
+        props: ['zoneOnMap'],
         data() {
+                        
             return {
                 zones: [],
                 points: [],
+                WROCLAW_ZONE: 1,
+                AREA_POINTS: 0
             }
         },
 
         created() {
-            fetch.zonesData().then(zone => this.zones.push(zone.objects[1].allowedAreas[0].points));
+
+            // Request do API po dostepna strefe, bezposrednio przy uruchomieniu komponentu
+            fetch.zonesData().then(zone => this.zones.push(zone.objects[this.WROCLAW_ZONE].allowedAreas[this.AREA_POINTS].points));
         },
         
         computed: {
-
+            // Zapisanie nowego obiektu z odpowiednim parametrem wspolrzednych 'lat' / 'lng'
             initZones() { 
                 if (this.zones.length > 0) {
-                    this.zones[0].map(coord => {
+                    this.zones[this.AREA_POINTS].map(coord => {
                         this.points.push({
                             lat: coord.latitude,
                             lng: coord.longitude

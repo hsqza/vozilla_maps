@@ -1,57 +1,73 @@
 <template>
   <div>
 
-    <div class="form-check">
-      <input class="form-check-input" type="checkbox" id="defaultCheck1" @click="addMarker" :checked="carsOnMap">
-      <label class="form-check-label" for="defaultCheck1">Cars</label>
+      <div class="container bg-dark text-white">
+          <div class="row">
+              <div class="col-lg-10 col-md-12 toolbar-options mx-auto d-flex flex-row justify-content-around align-items-center">
 
-      <select style="width:300px; display: flex; margin: 0 auto 30px" v-model="selectedCars" @change="filterByAvailable">
-        <option v-for="(status, index) in statusCars" :key="index" :value="status.name" :selected="status.name">{{ status.translate }}</option>
-      </select>
+                <div class="form-check">
+                    <input class="form-check-input" type="checkbox" id="defaultCheck1" @click="addCar" :checked="carsOnMap" :disabled="vehicles.length == 0">
+                    <label class="form-check-label" for="defaultCheck1">Auta</label>
+                    <span class="checkmark" @click="checkInput"></span>
+                    
+                    <!-- Po otrzymaniu/zapisaniu obiektu z pojazdami, nastepuje wywolanie funkcji dodajacej samochody na mape -->
+                    <span v-if="initCars" class="hidden"></span>
 
-    </div>
+                    <template v-if="carsOnMap">
+                        <select v-model="selectedCars" @change="filterByAvailable" @click="toggleArrow">
+                            <option v-for="(status, index) in statusCars" :key="index" :value="status.name" :selected="status.name">{{ status.translate }}</option>
+                        </select>
+                        <span class="select-arrow"></span>
+                    </template>
+                    
+                </div>
 
-    <div class="form-check">
-      <input class="form-check-input" type="checkbox" id="defaultCheck2" :checked="carsZone" @click="carsZone = !carsZone">
-      <label class="form-check-label" for="defaultCheck2">Zone</label>
-    </div>
-    <div class="form-check">
-      <input class="form-check-input" type="checkbox" id="defaultCheck3" @click="parkingZone">
-      <label class="form-check-label" for="defaultCheck3">Parking</label>
-    </div>
-    <div class="form-check">
-      <input class="form-check-input" type="checkbox" id="defaultCheck4" @click="poiZone">
-      <label class="form-check-label" for="defaultCheck4">POI</label>
-    </div>
-   
-    <div v-if="initCars && !initCar ? addMarker : false"></div>
+                <div class="form-check">
+                    <input class="form-check-input" type="checkbox" id="defaultCheck2" :checked="zoneOnMap" @click="zoneOnMap = !zoneOnMap">
+                    <label class="form-check-label" for="defaultCheck2">Strefa</label>
+                    <span class="checkmark" @click="checkInput"></span>
+                </div>
 
+                <div class="form-check">
+                    <input class="form-check-input" type="checkbox" id="defaultCheck3" @click="parkingZone">
+                    <label class="form-check-label" for="defaultCheck3">Parking</label>
+                    <span class="checkmark" @click="checkInput"></span>
+                </div>
+                <div class="form-check">
+                    <input class="form-check-input" type="checkbox" id="defaultCheck4" @click="poiZone">
+                    <label class="form-check-label" for="defaultCheck4">POI</label>
+                    <span class="checkmark" @click="checkInput"></span>
+                </div>
+
+            </div>
+          </div>
+      </div>    
     
-    <gmap-map :center="configMap.center" :zoom="configMap.zoom" style="width:100%;  height: 600px;" >
+    <gmap-map :center="configMap.center" :zoom="configMap.zoom" style="width:100%;  height: 750px;" >
 
-      <gmap-info-window :options="infoOptions" :position="infoWindowPos" :opened="infoWinOpen" @closeclick="infoWinOpen=false">
-        <div v-html="infoContent"></div>
+      <gmap-info-window :options="detailWindow.infoOptions" :position="detailWindow.infoWindowPos" :opened="detailWindow.infoWinOpen" @closeclick="detailWindow.infoWinOpen=false">
+        <div v-html="detailWindow.infoContent"></div>
       </gmap-info-window>
 
       <template v-if="carsOnMap">
-        <gmap-cluster :minimumClusterSize="3" :zoomOnClick="true">
-          <gmap-marker :key="index" v-for="(m, index) in markers" :position="m.position" @click="toggleInfoWindow(m,index)" :icon="(m.parameters.status == 'AVAILABLE') ? iconAvaiable : iconUnavailable"></gmap-marker>
+        <gmap-cluster id="clusterCar" :minimumClusterSize="3" :zoomOnClick="true" :styles="checkStatusVehicleAndSetCorrectCluster">
+          <gmap-marker :key="index" v-for="(m, index) in cars" :position="m.position" @click="toggleInfoWindow(m,index)" :icon="(m.parameters.status == 'AVAILABLE') ? icons.iconAvaiable : icons.iconUnavailable"></gmap-marker>
         </gmap-cluster>
       </template>
 
       <template v-if="parkingOnMap">
-        <gmap-cluster :minimumClusterSize="2" :zoomOnClick="true" :styles="clusterStyles">
-          <gmap-marker :key="index" v-for="(p, index) in parking" :position="p.position" @click="toggleInfoWindow(p,index)" :label="{text: String(p.parameters.availableSpacesCount)}" :icon="iconParking" ></gmap-marker>
+        <gmap-cluster :minimumClusterSize="2" :zoomOnClick="true" :styles="clusters.clusterStylesParking">
+          <gmap-marker :key="index" v-for="(p, index) in parking" :position="p.position" @click="toggleInfoWindow(p,index)" :label="{text: String(p.parameters.availableSpacesCount)}" :icon="icons.iconParking" ></gmap-marker>
         </gmap-cluster>
       </template>
 
       <template v-if="poiOnMap">
-        <gmap-cluster :minimumClusterSize="2" :zoomOnClick="true">
-          <gmap-marker :key="index" v-for="(p, index) in poi" :position="p.position" @click="toggleInfoWindow(p,index)" :icon="iconPOI" ></gmap-marker>
+        <gmap-cluster :minimumClusterSize="2" :zoomOnClick="true" :styles="clusters.clusterStylesPOI">
+          <gmap-marker :key="index" v-for="(p, index) in poi" :position="p.position" @click="toggleInfoWindow(p,index)" :icon="icons.iconPOI" ></gmap-marker>
         </gmap-cluster>
       </template>
 
-      <AreaPolygon :carsZone="carsZone" />
+      <AreaPolygon :zoneOnMap="zoneOnMap" />
       
     </gmap-map>
     
@@ -60,109 +76,88 @@
 
 <script>
     import axios from 'axios'
-    import * as fetch from '../axios_request.js'
-    import * as informationWindow from './mapIncludes/Infowindow'
+    import * as fetch from '../map_request.js'
     import AreaPolygon from './mapIncludes/AreaPolygon.vue'
+
+    import { ICONS, CLUSTER_CONFIG } from '../config/map_config'
+    import * as informationWindow from './mapIncludes/infowindow'
+
     
     export default {
         data() {
             return {
-                clusterStyles: [{
-                    url: require('../assets/marker_cluster_ico.png'),
-                    gridSize: 200,
-                    height: 63,
-                    width: 49,
-                    anchorText: [-20, 14]
-                }],
                 configMap: {
                     center: { 
-                        lat: 51.10, 
-                        lng: 17.197
+                        lat: 51.125,
+                        lng: 17.0
                     },
-                    zoom: 11
+                    zoom: 12
                 },
-                markers: [],
+
                 vehicles: [],
-                iconAvaiable: { url: require('../assets/auto-ico.png')},
-                iconUnavailable: { url: require('../assets/auto-zajete-ico.png')},
-                iconParking: {
-                    url: require('../assets/parking-ico-2.png'),
-                    labelOrigin: { x: 39, y: 11 }
-                },
-                iconPOI: { url: require('../assets/poi-ico.png') },
-                dataLocations: [],
+                cars: [],
                 parking: [],
                 poi: [],
-                currentPlace: null,
-
-                infoContent: null,
-                infoWindowPos: null,
-                infoWinOpen: false,
-                currentMidx: null,
-                //optional: offset infowindow so it visually sits nicely on top of our marker
-                infoOptions: {
-                    pixelOffset: {
-                    width: 0,
-                    height: -35
-                    }
-                },
+                initCarClick: false,
+                
+                carsOnMap: false,
+                zoneOnMap: true,
+                parkingOnMap: false,
+                poiOnMap: false,
+                
                 statusCars: [
                     { name: 'empty', translate: 'wszystkie' },
                     { name: 'available', translate: 'Dostępne' },
                     { name: 'unavailable', translate: 'Niedostępne' }
                 ],
                 selectedCars: 'empty',
-                carsOnMap: false,
-                parkingOnMap: false,
-                poiOnMap: false,
-                initCar: false,
-                carsZone: true,
+
+                detailWindow: informationWindow.INFOWINDOW_CONFIG,
+                icons: ICONS,
+                clusters: CLUSTER_CONFIG
             }
         },
 
         created() {
-            // Wywołanie request'ow przy uruchomieniu komponentu
-            fetch.carsData().then(data => this.vehicles = data.objects);
+            // Request do API po samochody, bezpośrednio przy uruchomieniu komponentu
+            fetch.carsData().then(data => this.vehicles = data.objects);            
         },
 
         computed: {
-
+            // Po wykonaniu request'a i zapisaniu stanu, nastepuje wywolanie funkcji dodajacej pojazdy na mape 
             initCars() {
-                if (this.vehicles.length > 0 && this.initCar == false) {
-                    this.addMarker();
-                    this.initCar = true;
+                const vehiclesObjectUpdated = (this.vehicles.length > 0 && !this.initCarClick) ? this.addCar() : false;
+            },
+
+            // W zależności od statusu pojazdu, podlaczany zostaje odpowiedni obiekt Cluster
+            checkStatusVehicleAndSetCorrectCluster() {
+                
+                switch (this.selectedCars) {
+                    case 'unavailable':
+                        return this.clusters.clusterStylesCarReserved;
+                        break;
+                    default:
+                        return this.clusters.clusterStylesCar;
+                        break;
                 }
-                return this.vehicles;
             }
-
-        },
-
-        mounted() {
-            this.geolocate();
         },
 
         methods: {
 
-            // Dodanie markerów do mapy
-            addMarker() {
+            addCar() {
+            /*  Dodanie pojazdów na mape
+                Funkcja zostanie wywolana tylko raz, nastepnie wyswietlanie obiektow dziala na zasadzie toggle */
+
                 this.carsOnMap = !this.carsOnMap;
                 const addedMarker = false;
 
-                // Dodanie markerów do mapy
-                if (this.addedMarker) return
-                    this.vehicles.map(el => this.markers.push({ position: {lat: el.location.latitude, lng: el.location.longitude}, parameters: el}));
-                    this.addedMarker = true;
+                if (this.addedMarker || this.initCarClick) return
 
+                this.vehicles.map(car => this.cars.push({ position: {lat: car.location.latitude, lng: car.location.longitude}, parameters: car}));
+                this.addedMarker = true;
+                this.initCarClick = true;
             },            
-
-            geolocate: function() {
-                navigator.geolocation.getCurrentPosition(position => {
-                    this.center = {
-                        lat: position.coords.latitude,
-                        lng: position.coords.longitude
-                    };
-                });
-            },
 
             // Filtrowanie po statusie pojazdu
             filterByAvailable() {
@@ -175,77 +170,106 @@
 
                     case 'unavailable':
                         this.resetMarkersAndGetFilteredCar('reserved');
+                        // this.clusters.clusterStylesCar[0] = this.icons.iconReservedMarkerM1;
+                        // console.log(this.clusters.clusterStylesCarReserved[0])
                         break;
 
                     default:
                         this.resetMarkersAndGetFilteredCar();
                 }
+
+                // Po wybraniu opcji w polu select, usuwana jest klasa rotate ze strzalki 
+                const arrow = document.querySelector('.select-arrow');
+
+                for (let cl in Object.values(arrow.classList)) {
+                    
+                    Object.values(arrow.classList)[cl] -= 'rotate';
+                    return false;                  
+                }
                 
             },
 
-            // Usunięcie markerów z mapy i request po wybrane pojazdy (dostepne / niedostepne / wszystkie)
+            // Usunięcie pojazdów z mapy i request po wybrane pojazdy (dostepne / niedostepne / wszystkie)
             resetMarkersAndGetFilteredCar(status) {
-                this.markers = [];
+                this.cars = [];
 
                 fetch.carsData(status ? status.toUpperCase() : 'ALL').then(data => {
-                    data.objects.map(car => this.markers.push({ position: {lat: car.location.latitude, lng: car.location.longitude}, parameters: car }))
+                    data.objects.map(car => this.cars.push({ position: {lat: car.location.latitude, lng: car.location.longitude}, parameters: car }))
                 })
             },
 
+            // Rotacja dla strzalki - toggle
+            toggleArrow() {
+                const arrow = document.querySelector('.select-arrow');
+                arrow.classList.toggle('rotate');
+            },
+
             parkingZone() {
-                
+            /*  Dodanie miejsc parkingowych na mape
+                Funkcja zostanie wywolana tylko raz, nastepnie wyswietlanie obiektow dziala na zasadzie toggle */
+
                 this.parkingOnMap = !this.parkingOnMap;
                 const initParking = false;
 
                 if (this.initParking) return;
 
-                fetch.parkingData().then(data => {
-                    data.objects.map(place => this.parking.push({ position: {lat: place.location.latitude, lng: place.location.longitude}, parameters: place }));
-                    console.log(data.objects)
-                    this.initParking = true;
-                })
+                this.storeData(fetch.parkingData(), this.parking);
+                this.initParking = true;
             },
 
             poiZone() {
+            /*  Dodanie POI na mape
+                Funkcja zostanie wywolana tylko raz, nastepnie wyswietlanie obiektow dziala na zasadzie toggle */
                 
                 this.poiOnMap = !this.poiOnMap;
                 const initPOI = false;
 
                 if (this.initPOI) return;
+                
+                this.storeData(fetch.poiData(), this.poi);
+                this.initPOI = true;
 
-                fetch.poiData().then(data => {
-                    data.objects.map(item => this.poi.push({ position: {lat: item.location.latitude, lng: item.location.longitude}, parameters: item }));
-                    console.log(this.poi);
-                    this.initPOI = true;
+            },
+
+            // Zapisanie obiektu po wykonaniu request'a. Jako pierwszy argument przekazywana jest funkcja, drugi to tablica
+            storeData(type, array) {
+                type.then(data => {
+                    data.objects.map(point => array.push({ position: {lat: point.location.latitude, lng: point.location.longitude}, parameters: point }));
                 })
             },
 
             toggleInfoWindow: function(marker, idx) {
-                this.infoWindowPos = marker.position;
+                this.detailWindow.infoWindowPos = marker.position;
 
                 switch (marker.parameters.discriminator) {
                     case 'vehicle':
-                        this.infoContent = informationWindow.getInfoWindowCar(marker);
+                        this.detailWindow.infoContent = informationWindow.getInfoWindowCar(marker);
                         break;
                     case 'parking':
-                        this.infoContent = informationWindow.getInfoWindowContentParking(marker);
+                        this.detailWindow.infoContent = informationWindow.getInfoWindowContentParking(marker);
                         break;
                     case 'poi':
-                        this.infoContent = informationWindow.getInfoWindowContentPOI(marker);
+                        this.detailWindow.infoContent = informationWindow.getInfoWindowContentPOI(marker);
                 }
 
-                //check if its the same marker that was selected if yes toggle
+                // wyswietlanie infowindow tego samego markera - toggle
                 if (this.currentMidx == idx) {
-                    this.infoWinOpen = !this.infoWinOpen;
+                    this.detailWindow.infoWinOpen = !this.detailWindow.infoWinOpen;
                 }
-                //if different marker set infowindow to open and reset current marker index
+                // klikniecie w inny marker, powoduje zamkniecie obecnego infowindow
                 else {
-                    this.infoWinOpen = true;
-                    this.currentMidx = idx;
+                    this.detailWindow.infoWinOpen = true;
+                    this.detailWindow.currentMidx = idx;
                 }
             },
+
+            // Delegowanie zdarzenia 'klik' na customowym checkboxie
+            checkInput(event) {
+                event.target.previousElementSibling.previousElementSibling.click();
+            }
         },
 
+        // Zadeklarowanie strefy jako komponentu
         components: {
             AreaPolygon
         }
@@ -253,9 +277,125 @@
 </script>
 
 <style lang="scss">
+    @import '../styles/variable.scss';
 
-    .availableSpace {
-        border: 2px solid pink;
-    }    
+    .toolbar-options {
+        height: 60px;
+    }
+
+    .form-check {
+        position: relative;
+        display: flex;
+        flex-direction: row;
+        padding-left: 25px;
+        cursor: pointer;
+        -webkit-user-select: none;
+        -moz-user-select: none;
+        user-select: none;
+
+        &:hover {
+
+            input ~ .checkmark {
+                background-color: #ccc;
+            }
+
+        } 
+
+        .checkmark {
+            position: absolute;
+            top: 4px;
+            left: 3px;
+            height: 15px;
+            width: 15px;
+            background-color: #eee;
+            border-radius: 3px;
+
+            &:after {
+                content: "";
+                position: absolute;
+                display: none;
+                left: 5px;
+                top: 1px;
+                width: 5px;
+                height: 10px;
+                border: solid white;
+                border-width: 0 3px 3px 0;
+                -webkit-transform: rotate(45deg);
+                -moz-transform: rotate(45deg);
+                transform: rotate(45deg);
+            }
+        }
+
+        input {
+
+            &:checked ~ .checkmark {
+                background-color: $vozillaColor;
+            }
+
+            &:checked ~ .checkmark:after {
+                display: block;
+            }
+        }
+
+        label {
+            cursor: pointer;
+        }
+
+        select {
+            position: relative;
+            width: 200px;
+            margin-left: 20px;
+            padding-left: 10px;
+            background: none;
+            border: none;
+            border-bottom: 2px solid $vozillaColor;
+            outline: none;
+            font-size: 14px;
+            color: $vozillaColor;
+            -webkit-appearance: none;
+            -moz-appearance: none;
+            appearance: none;
+            cursor: pointer;
+
+            option {
+                color: $vozillaColor;
+                cursor: pointer;
+            }
+        }
+
+        .select-arrow {
+            content: '';
+            position: absolute;
+            width: 10px;
+            height: 10px;
+            top: 0;
+            right: 0;
+            border-right: 2px solid $vozillaColor;
+            border-bottom: 2px solid $vozillaColor;
+            transform-origin: 50% 50%;
+            -webkit-transform: rotate(45deg);
+            -moz-transform: rotate(45deg);
+            transform: rotate(45deg);
+        }
+
+        .rotate {
+            transform: rotate(225deg);
+            top: 5px;
+        }
+    }
+
+    @media screen and (max-width: 576px) {
+
+        .toolbar-options {
+            flex-direction: column !important;
+            height: inherit;
+
+            .form-check {
+                margin: 10px 0;
+            }
+        }
+
+    }
+
 
 </style>

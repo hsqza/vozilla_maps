@@ -1,17 +1,27 @@
-// Template infowindow dla punktów wskazanych na mapie
+import { ICONS } from '../../config/map_config';
 
+export const INFOWINDOW_CONFIG = {
+    infoContent: null,
+    infoWindowPos: null,
+    infoWinOpen: false,
+    currentMidx: null,
+    infoOptions: {
+        pixelOffset: {
+            width: 0,
+            height: -65
+        }
+    },
+}
+
+// Templatki infowindow dla punktów/markerów wskazanych na mapie
 export function getInfoWindowCar(marker) {
     
     let carsImage;
-    let imageNissanLeaf = { url: require('../../assets/nissan_leaf_small.jpg')};
-    let imageNissanENV = { url: require('../../assets/nissan_e-nv200_small.jpg')};
+    let nissanLeaf = ICONS.imageNissanLeaf;
+    let nissanVan = ICONS.imageNissanENV;
     
-
-    if (marker.parameters.name == 'NISSAN Leaf') {
-        carsImage = imageNissanLeaf.url
-    } else {
-        carsImage = imageNissanENV.url
-    };
+    // Wyświetlanie odpowiedniego zdjęcia pojazdu
+    const carIsNissanLeaf = (marker.parameters.name == 'NISSAN Leaf') ? carsImage = nissanLeaf.url : carsImage = nissanVan.url;
 
     return (`
         <div class="card" style="width: 235px">
