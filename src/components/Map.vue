@@ -170,8 +170,6 @@
 
                     case 'unavailable':
                         this.resetMarkersAndGetFilteredCar('reserved');
-                        // this.clusters.clusterStylesCar[0] = this.icons.iconReservedMarkerM1;
-                        // console.log(this.clusters.clusterStylesCarReserved[0])
                         break;
 
                     default:

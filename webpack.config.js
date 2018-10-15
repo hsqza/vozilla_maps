@@ -62,8 +62,6 @@ module.exports = {
     historyApiFallback: true,
     noInfo: true,
     overlay: true,
-    hot: true,
-    headers: { "origin": "https://www.vozilla.pl", "Access-Control-Allow-Origin": "*", },
   },
   performance: {
     hints: false
