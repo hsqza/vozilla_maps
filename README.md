@@ -1,4 +1,5 @@
-# vozilla
+Vozilla DEMO Google Map - Vue
+
 
 > Vue Vozilla Maps
 
